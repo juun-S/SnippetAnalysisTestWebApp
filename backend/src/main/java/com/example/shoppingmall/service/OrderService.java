@@ -10,43 +10,86 @@ import java.util.List;
 
 @Service
 public class OrderService {
-    @Autowired private OrderRepository orderRepository;
-    @Autowired private CartRepository cartRepository;
-    @Autowired private UserRepository userRepository;
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private CartRepository cartRepository;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PaymentService paymentService;
 
     @Transactional
-    public Order createOrder(Long userId) {
+    public Order createOrder(Long userId, Long paymentMethodId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         List<Cart> cartItems = cartRepository.findByUser(user);
-        
-        if (cartItems.isEmpty()) throw new RuntimeException("Cart is empty");
+
+        if (cartItems.isEmpty())
+            throw new RuntimeException("Cart is empty");
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (Cart item : cartItems) {
+            total = total.add(item.getProduct().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+        }
+
+        // Process Payment
+        Payment payment = paymentService.processPayment(user, total, "USD", paymentMethodId);
 
         Order order = new Order();
         order.setUser(user);
-        order.setStatus("COMPLETED");
-        
-        BigDecimal total = BigDecimal.ZERO;
-        
+        order.setTotalPrice(total);
+        order.setPaymentId(payment.getId());
+
+        if ("AUTHORIZED".equals(payment.getStateName()) || "SUCCESS".equals(payment.getStateName())) {
+            order.setStatus("COMPLETED");
+        } else {
+            order.setStatus("PAYMENT_FAILED");
+            throw new RuntimeException("Payment failed: " + payment.getStateName());
+        }
+
         for (Cart item : cartItems) {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setProduct(item.getProduct());
             orderItem.setQuantity(item.getQuantity());
             orderItem.setPrice(item.getProduct().getPrice());
-            
+
             order.getItems().add(orderItem);
-            total = total.add(item.getProduct().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
         }
-        order.setTotalPrice(total);
-        
+
         orderRepository.save(order);
         cartRepository.deleteAll(cartItems); // Clear cart
-        
+
         return order;
     }
-    
+
     public List<Order> getOrders(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         return orderRepository.findByUser(user);
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        if (!"COMPLETED".equals(order.getStatus())) {
+            throw new RuntimeException("Cannot cancel order in state: " + order.getStatus());
+        }
+
+        // Refund Payment
+        if (order.getPaymentId() != null) {
+            Payment payment = paymentService.getPayment(order.getPaymentId());
+            if (payment != null) {
+                paymentService.refundPayment(payment);
+            }
+        }
+
+        order.setStatus("CANCELLED");
+        orderRepository.save(order);
     }
 }

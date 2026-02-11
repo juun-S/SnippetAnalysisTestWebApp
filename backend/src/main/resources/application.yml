@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mariadb://localhost:3306/shoppingmall
+    url: jdbc:mariadb://localhost:3307/shoppingmall
     username: appuser
     password: apppassword
     driver-class-name: org.mariadb.jdbc.Driver

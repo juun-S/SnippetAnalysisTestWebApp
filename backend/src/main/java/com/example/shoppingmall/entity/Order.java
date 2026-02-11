@@ -9,7 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @Table(name = "orders")
 public class Order {
     @Id
@@ -19,6 +20,9 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "payment_id")
+    private Long paymentId;
 
     @Column(nullable = false)
     private BigDecimal totalPrice;

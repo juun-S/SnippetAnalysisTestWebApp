@@ -41,17 +41,7 @@ const CartPage = () => {
     };
 
     const handleCheckout = () => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        api.post(`/orders/${user.id}`)
-            .then(res => {
-                alert(`Order placed successfully! Order ID: ${res.data.id}`);
-                setCartItems([]);
-                setTotal(0);
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Checkout failed');
-            });
+        navigate('/checkout');
     };
 
     return (

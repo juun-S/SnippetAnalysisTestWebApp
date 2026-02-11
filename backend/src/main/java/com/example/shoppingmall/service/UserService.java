@@ -8,7 +8,8 @@ import java.util.Optional;
 
 @Service
 public class UserService {
-    @Autowired private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     public User register(User user) {
         // In a real application, you should hash the password here.
@@ -22,5 +23,9 @@ public class UserService {
             return user;
         }
         return Optional.empty();
+    }
+
+    public User getUserById(Long id) {
+        return userRepository.findById(id).orElse(null);
     }
 }

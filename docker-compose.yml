@@ -14,12 +14,12 @@ services:
     container_name: shopping-mall-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: shoppingmall
       MYSQL_USER: appuser
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_PASSWORD: apppassword
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - ./data/mariadb:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
